@@ -1,0 +1,145 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>UUID Benchmark</title>
+
+  <script>
+    var x = 2147483648;
+
+    var algorithms = [
+      {
+      	n: "crypto",
+      	fn: function () {
+          var dvals = new Uint32Array(4);
+
+          window.crypto.getRandomValues(dvals);
+
+          return {
+            d0: dvals[0],
+            d1: dvals[1],
+            d2: dvals[2],
+            d3: dvals[3]
+          };
+        }
+      }, {
+      	n: "random",
+      	fn: function () {
+          return {
+            d0: Math.random() * 0x100000000 >>> 0,
+            d1: Math.random() * 0x100000000 >>> 0,
+            d2: Math.random() * 0x100000000 >>> 0,
+            d3: Math.random() * 0x100000000 >>> 0
+          };
+        }
+      }, {
+      	n: "goog",
+      	fn: function () {
+          return {
+            d0: Math.abs(Math.floor(Math.random() * x) ^ (+new Date())),
+            d1: Math.abs(Math.floor(Math.random() * x) ^ (+new Date())),
+            d2: Math.abs(Math.floor(Math.random() * x) ^ (+new Date())),
+            d3: Math.abs(Math.floor(Math.random() * x) ^ (+new Date()))
+          };
+        }
+      }
+    ];
+
+  	function startTest() {
+      var algorithmListDiv = document.getElementById("list"),
+          algorithm = algorithms[algorithmListDiv.value],
+          fn = algorithm.fn;
+
+      var count = document.getElementById("count").value,
+          results = [],
+          i,
+          j;
+
+      printMsg("Start Test " + algorithm.n + "!");
+
+      window.setTimeout(function () {
+
+      var startTime = +new Date();
+
+      for (i = 0; i < count; i++) {
+      	results.push(fn());
+      }
+
+      printMsg("Time used: " + (+new Date() - startTime) + "ms");
+
+      if (document.getElementById("detect").checked) {
+
+        printMsg("Detecting collision!");
+
+      window.setTimeout(function() {
+        var result0, result1, collisionCount = 0;
+        for (i = 0; i < count - 1; i++) {
+      	  result0 = results[i];
+      	  for (j = i + 1; j < count; j++) {
+      	    result1 = results[j];
+      	    if (result0.d0 === result1.d0 && result0.d1 === result1.d1 && result0.d2 === result1.d2 && result0.d3 === result1.d3) {
+      	  	  collisionCount++;
+      	    }
+      	  }
+        }
+
+        printMsg(collisionCount + " collision found!");	
+
+        printMsg("End Test " + algorithm.n + "!");
+
+      }, 0);
+        
+      } else {
+      	printMsg("End Test " + algorithm.n + "!");
+      }
+
+      }, 0);    
+      
+  	}
+
+  	function printMsg(msg) {
+      var outputDiv = document.getElementById("output");
+      outputDiv.innerHTML += "<h3>" + msg + "</h3>";
+  	}
+
+  </script>
+
+</head>
+
+<body>
+
+  <h1>UUID Benchmark</h1>
+
+  <h3># of ID to generate:<input id="count" value="100000"></input></h3>
+
+  <h3>Choose an algorithm:<select id="list"></select></h3>  
+
+  <h4><input id="detect" type="checkbox"></input>Detect Collision? 100000 results may take 5+ minutes!</h4>
+
+  <input type="button" value="Start Test" onclick="startTest()"></input>
+
+  <input type="button" value="Clear Output" onclick="document.getElementById('output').innerHTML='';"></input>
+
+  <h3>Output:</h3>
+
+  <div id="output"></div>
+
+  <script>
+    // init algorithm list
+    var html = "";
+
+    algorithms.forEach(function (algorithm, i){
+      html += "<option value='" + i + "'>" + algorithm.n + "</option>";
+    });
+
+    var listDiv = document.getElementById("list");
+
+    listDiv.innerHTML = html;
+
+  </script>
+
+  
+</body>
+</html>
