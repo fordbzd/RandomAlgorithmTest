@@ -54,6 +54,7 @@
 
       var count = document.getElementById("count").value,
           results = [],
+          resultsObj = {},
           i,
           j;
 
@@ -67,6 +68,8 @@
       	results.push(fn());
       }
 
+      window.lastResult = results;
+
       printMsg("Time used: " + (+new Date() - startTime) + "ms");
 
       if (document.getElementById("detect").checked) {
@@ -74,15 +77,14 @@
         printMsg("Detecting collision!");
 
       window.setTimeout(function() {
-        var result0, result1, collisionCount = 0;
+        var resultKey, collisionCount = 0;
         for (i = 0; i < count - 1; i++) {
-      	  result0 = results[i];
-      	  for (j = i + 1; j < count; j++) {
-      	    result1 = results[j];
-      	    if (result0.d0 === result1.d0 && result0.d1 === result1.d1 && result0.d2 === result1.d2 && result0.d3 === result1.d3) {
-      	  	  collisionCount++;
-      	    }
-      	  }
+        	resultKey = results[i].d0.toString() + results[i].d1 + results[i].d2 + results[i].d3;
+        	if (resultsObj[resultKey]) {
+        		collisionCount++;
+        	} else {
+        		resultsObj[resultKey] = true;
+        	}
         }
 
         printMsg(collisionCount + " collision found!");	
@@ -97,6 +99,32 @@
 
       }, 0);    
       
+  	}
+
+  	function downloadCSV() {
+
+        var csvFile = '';
+        for (var i = 0; i < window.lastResult.length; i++) {
+        	var result = window.lastResult[i];
+            csvFile += result.d0.toString() + result.d1 + result.d2 + result.d3 + "\n";
+        }
+
+        var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+        if (navigator.msSaveBlob) { // IE 10+
+            navigator.msSaveBlob(blob, "results");
+        } else {
+            var link = document.createElement("a");
+            if (link.download !== undefined) { // feature detection
+                // Browsers that support HTML5 download attribute
+                var url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "results.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
   	}
 
   	function printMsg(msg) {
@@ -116,11 +144,13 @@
 
   <h3>Choose an algorithm:<select id="list"></select></h3>  
 
-  <h4><input id="detect" type="checkbox"></input>Detect Collision? 100000 results may take 5+ minutes!</h4>
+  <h4><input id="detect" type="checkbox"></input>Detect Collision?</h4>
 
   <input type="button" value="Start Test" onclick="startTest()"></input>
 
   <input type="button" value="Clear Output" onclick="document.getElementById('output').innerHTML='';"></input>
+
+  <input type="button" value="Export to CSV" onclick="downloadCSV()"></input>
 
   <h3>Output:</h3>
 
